@@ -65,7 +65,7 @@ const getStronger = (model, inputs, labels) => {
   });
 
   const batchSize = 32;
-  const epochs = 50;
+  const epochs = 15;
 
   return model.fit(inputs, labels, {
     batchSize,
@@ -83,12 +83,48 @@ const createModel = () => {
   const model = tf.sequential();
   model.add(tf.layers.dense({
     inputShape: [1],
-    units: 1,
+    units: 100,
+  }));
+  model.add(tf.layers.dense({
+    units: 50,
+    activation: 'relu',
   }));
   model.add(tf.layers.dense({
     units: 1,
+    activation: 'sigmoid',
   }));
   return model;
+};
+
+const testModel = (model, inputData, { inputMax, inputMin, labelMin, labelMax }) => {
+  const [xs, preds] = tf.tidy(() => {
+    const xs = tf.linspace(0, 1, 100);
+    const preds = model.predict(xs.reshape([100, 1]));
+    const unNormXs = xs
+      .mul(inputMax.sub(inputMin))
+      .add(inputMin);
+    const unNormPreds = preds
+      .mul(labelMax.sub(labelMin))
+      .add(labelMin);
+
+    return [unNormXs.dataSync(), unNormPreds.dataSync()];
+  });
+
+  const predictedPoints = Array.from(xs).map((val, i) => ({ x: val, y: preds[i] }));
+  const originalPoints = inputData.map(d => ({ x: d.horsepower, y: d.mpg }));
+
+  tfvis.render.scatterplot(
+    { name: 'Model Predicitions vs Original Data' },
+    { 
+      values: [originalPoints, predictedPoints],
+      series: ['original', 'predicted'],
+    },
+    {
+      xLabel: 'Horsepower',
+      yLabel: 'MPG',
+      height: 300,
+    },
+  );
 };
 
 const run = async () => {
@@ -100,10 +136,11 @@ const run = async () => {
     model,
   );
 
-  const { inputs, labels } = tensorize(data);
+  const tensorData = tensorize(data);
+  const { inputs, labels, inputMax, inputMin, labelMax, labelMin } = tensorData;
   await getStronger(model, inputs, labels);
   
-  console.log('Harder, better, faster, stronger.')
+  testModel(model, data, tensorData);
 };
 
 document.addEventListener('DOMContentLoaded', run);
