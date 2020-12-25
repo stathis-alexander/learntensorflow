@@ -57,6 +57,28 @@ const tensorize = data => {
   };
 };
 
+const getStronger = (model, inputs, labels) => {
+  model.compile({
+    optimizer: tf.train.adam(),
+    loss: tf.losses.meanSquaredError,
+    metrics: ['mse'],
+  });
+
+  const batchSize = 32;
+  const epochs = 50;
+
+  return model.fit(inputs, labels, {
+    batchSize,
+    epochs,
+    shuffle: true,
+    callbacks: tfvis.show.fitCallbacks(
+      { name: 'Training Performance' },
+      ['loss', 'mse'],
+      { height: 200, callbacks: ['onEpochEnd'] },
+    ),
+  });
+};
+
 const createModel = () => {
   const model = tf.sequential();
   model.add(tf.layers.dense({
@@ -70,27 +92,18 @@ const createModel = () => {
 };
 
 const run = async () => {
-  const data = (await getData())
-    .map(d => ({
-      x: d.horsepower,
-      y: d.mpg,
-    }));
-
-  tfvis.render.scatterplot(
-    { name: 'Horsepower vs. MPG' },
-    { values: data },
-    {
-      xLabel: 'Horsepower',
-      yLabel: 'MPG',
-      height: 300
-    }
-  );
-
+  const data = await getData();
+  
   const model = createModel();
   tfvis.show.modelSummary(
     { name: 'Model Summary' },
     model,
   );
+
+  const { inputs, labels } = tensorize(data);
+  await getStronger(model, inputs, labels);
+  
+  console.log('Harder, better, faster, stronger.')
 };
 
 document.addEventListener('DOMContentLoaded', run);
