@@ -66,7 +66,7 @@ const getStronger = (model, inputs, labels) => {
   });
 
   const batchSize = 32;
-  const epochs = 10;
+  const epochs = 15;
 
   return model.fit(inputs, labels, {
     batchSize,
@@ -106,14 +106,6 @@ const testModel = (model, inputData, { inputMax, inputMin, labelMin, labelMax })
     ]);
 
     const preds = model.predict(newXs.transpose());
-  
-    preds.print();
-
-    inputMax.max().print();
-    inputMin.min().print();
-    labelMax.print();
-    labelMin.print();
-
     const unNormXs = xs 
       .mul(inputMax.max().sub([40]))
       .add([40]);

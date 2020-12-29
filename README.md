@@ -18,8 +18,10 @@ I don't know any ML. I started by following a (very basic) guide I found on Tens
 
 ### Extension 1
 
-I was able to extend this example by also considering the number of cylinders, as this data was provided in the original data set and also seemed like it might be an indicator of the MPG of a vehicle. 
+I was able to extend this example by also considering the number of cylinders, as this data was provided in the original data set and also seemed like it might be an indicator of the MPG of a vehicle. I was also able to get a model which was nonlinear, a massive improvement.
 
 ### Extension 2 (Nodification)
 
-I'd like to convert this to a Node.js project from a simple browser script. We'll see how it goes.
+I'd like to convert this to a Node.js project from a simple browser script. We'll see how it goes. The idea here being that I could expose the following endpoints:
+  * Compute models. Saves new models to existing folder. Overwrites existing model.
+  * Get MPG estimate. For a HP, Cylinder pair, return the predicted MPG.
