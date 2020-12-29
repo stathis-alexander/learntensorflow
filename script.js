@@ -13,6 +13,7 @@ const getData = async () => {
     .map(car => ({
       mpg: car.Miles_per_Gallon,
       horsepower: car.Horsepower,
+      cylinders: car.Cylinders,
     }))
     .filter(x => x.mpg != null && x.horsepower != null);
 };
@@ -20,12 +21,12 @@ const getData = async () => {
 const tensorize = data => {
   tf.util.shuffle(data);
 
-  const inputs = data.map(d => d.horsepower);
+  const inputs = data.map(d => [d.horsepower, d.cylinders]);
   const outputs = data.map(d => d.mpg);
 
   const inputTensor = tf.tensor2d(
     inputs,
-    [inputs.length, 1],
+    [inputs.length, 2],
   );
 
   const labelTensor = tf.tensor2d(
@@ -33,8 +34,8 @@ const tensorize = data => {
     [outputs.length, 1],
   );
 
-  const inputMax = inputTensor.max();
-  const inputMin = inputTensor.min();
+  const inputMax = tf.transpose(inputTensor).max(1);
+  const inputMin = tf.transpose(inputTensor).min(1);
   const labelMax = labelTensor.max();
   const labelMin = labelTensor.min();
 
@@ -65,7 +66,7 @@ const getStronger = (model, inputs, labels) => {
   });
 
   const batchSize = 32;
-  const epochs = 15;
+  const epochs = 10;
 
   return model.fit(inputs, labels, {
     batchSize,
@@ -82,12 +83,12 @@ const getStronger = (model, inputs, labels) => {
 const createModel = () => {
   const model = tf.sequential();
   model.add(tf.layers.dense({
-    inputShape: [1],
+    inputShape: [2],
     units: 100,
   }));
   model.add(tf.layers.dense({
-    units: 50,
-    activation: 'relu',
+    units: 100,
+    activation: 'sigmoid',
   }));
   model.add(tf.layers.dense({
     units: 1,
@@ -99,10 +100,23 @@ const createModel = () => {
 const testModel = (model, inputData, { inputMax, inputMin, labelMin, labelMax }) => {
   const [xs, preds] = tf.tidy(() => {
     const xs = tf.linspace(0, 1, 100);
-    const preds = model.predict(xs.reshape([100, 1]));
-    const unNormXs = xs
-      .mul(inputMax.sub(inputMin))
-      .add(inputMin);
+    const newXs = tf.stack([
+      xs,
+      xs
+    ]);
+
+    const preds = model.predict(newXs.transpose());
+  
+    preds.print();
+
+    inputMax.max().print();
+    inputMin.min().print();
+    labelMax.print();
+    labelMin.print();
+
+    const unNormXs = xs 
+      .mul(inputMax.max().sub([40]))
+      .add([40]);
     const unNormPreds = preds
       .mul(labelMax.sub(labelMin))
       .add(labelMin);
